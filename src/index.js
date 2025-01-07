@@ -1,183 +1,190 @@
 'use strict';
 
-console.log('BASKER EXPORT');
-
-// const path = require('path');
-// const EOL = require('os').EOL;
-
-// const _ = require('lodash');
-// const fs = require('fs-extra');
-// const glob = require('glob');
+const {events} = require('@pattern-lab/core');
 
 // const tab_loader = require('./src/tab-loader');
 
-// const pluginName = '@pattern-lab/plugin-tab';
-// //remove the forward-slash, which can accidentally result in directories being written in the output
-// const safePluginName = '@pattern-lab-plugin-tab';
+// const pluginName = '../../../../../../../../writers-theatre/node_modules/@madehq/pl-basker-export/src/index.js';
+const pluginName = '@madehq/pl-basker-export';
+//remove the forward-slash, which can accidentally result in directories being written in the output
+const safePluginName = '@madehq-pl-basker-export';
 
-// console.log('safePluginName', safePluginName);
+function addDownloadLink(patternLab) {
+  console.log('BASKER EXPORT: addDownloadLink', patternLab);
 
-// function writeConfigToOutput(patternlab, pluginConfig) {
-//     try {
-//         _.each(patternlab.uikits, uikit => {
-//             fs.outputFileSync(
-//                 path.join(
-//                 process.cwd(),
-//                 uikit.outputDir,
-//                 patternlab.config.paths.public.root,
-//                 'patternlab-components',
-//                 'packages',
-//                 `/${safePluginName}.json`
-//                 ),
-//                 JSON.stringify(pluginConfig, null, 2)
-//             );
-//         });
-//     } catch (ex) {
-//         console.trace(
-//             pluginName + ': Error occurred while writing pluginFile configuration'
-//         );
-//         console.log(ex);
-//     }
-// }
+  // Inject the Link
+  const plViewerFile = 'public/styleguide/js/patternlab-viewer.js';
+  let plViewerContent = readFileSync(plViewerFile, 'utf8');
+  if (plViewerContent.indexOf('Basker Export')) {
+    console.log('BASKER EXPORT: Adds link');
+    plViewerContent = plViewerContent.replace(/<li class="pl-c-tools__item">/, '<li class="pl-c-tools__item"><a href="/basker-export.zip">Basker Export</a></li><li class="pl-c-tools__item">');
+    writeFileSync(plViewerFile, plViewerContent, 'utf8');
+  }
+}
 
-// async function onPatternIterate(params) {
-//     const [patternlab, pattern] = params;
-//     await tab_loader(patternlab, pattern);
-// }
+/**
+ * Define what hooks you wish to invoke to here
+ * //todo change link
+ * For a full list of hooks - check out https://github.com/pattern-lab/patternlab-node/wiki/Creating-Plugins#events
+ * @param patternlab - global data store which has the handle to hooks
+ */
+function registerHooks(patternlab) {
+    console.log('BASKER EXPORT: registerHooks', events, patternlab.hooks);
+    // PATTERNLAB_PATTERN_WRITE_END Write ZIP
+    patternlab.hooks['patternlab-pattern-write-end'] = patternlab.hooks['patternlab-pattern-write-end'] ?? [];
+    patternlab.hooks['patternlab-pattern-write-end'].push(generateExportZip);
+    // PATTERNLAB_BUILD_END Write Link
+    // patternlab.hooks[events.PATTERNLAB_BUILD_END].push(addDownloadLink);
+    patternlab.hooks['patternlab-build-end'] = patternlab.hooks['patternlab-build-end'] ?? [];
+    patternlab.hooks['patternlab-build-end'].push(addDownloadLink);
+    patternlab.hooks['patternlab-pattern-write-begin'] = patternlab.hooks['patternlab-pattern-write-begin'] ?? [];
+    patternlab.hooks['patternlab-pattern-write-begin'].push(addDownloadLink);
+}
 
-// /**
-//  * Define what hooks you wish to invoke to here
-//  * //todo change link
-//  * For a full list of hooks - check out https://github.com/pattern-lab/patternlab-node/wiki/Creating-Plugins#events
-//  * @param patternlab - global data store which has the handle to hooks
-//  */
-// function registerHooks(patternlab) {
-//     patternlab.hooks['patternlab-pattern-write-end'].push(onPatternIterate);
-// }
+/**
+ * A single place to define the frontend configuration
+ * This configuration is outputted to the frontend explicitly as well as included in the plugins object.
+ *
+ */
+function getPluginFrontendConfig() {
+console.log('BASKER EXPORT: getPluginFrontendConfig');
+    return {
+        name: pluginName,
+        templates: [],
+        stylesheets: [],
+        javascripts: [
+        `patternlab-components/pattern-lab/${safePluginName}/js/${safePluginName}.js`,
+        ],
+        onready: 'PluginTab.init()',
+        callback: '',
+    };
+}
 
-// /**
-//  * A single place to define the frontend configuration
-//  * This configuration is outputted to the frontend explicitly as well as included in the plugins object.
-//  *
-//  */
-// function getPluginFrontendConfig() {
-//     return {
-//         name: pluginName,
-//         templates: [],
-//         stylesheets: [],
-//         javascripts: [
-//         `patternlab-components/pattern-lab/${safePluginName}/js/${safePluginName}.js`,
-//         ],
-//         onready: 'PluginTab.init()',
-//         callback: '',
-//     };
-// }
+/**
+ * The entry point for the plugin. You should not have to alter this code much under many circumstances.
+ * Instead, alter getPluginFrontendConfig() and registerEvents() methods
+ */
+function pluginInit(patternlab) {
+    console.log('BASKER EXPORT: src/index.js - pluginInit');
+    if (!patternlab) {
+        console.error('patternlab object not provided to pluginInit');
+        process.exit(1);
+    }
 
-// /**
-//  * The entry point for the plugin. You should not have to alter this code much under many circumstances.
-//  * Instead, alter getPluginFrontendConfig() and registerEvents() methods
-//  */
-// function pluginInit(patternlab) {
-//     console.log('src/index.js - pluginInit');
-//     if (!patternlab) {
-//         console.error('patternlab object not provided to pluginInit');
-//         process.exit(1);
-//     }
+    //write the plugin json to public/patternlab-components
+    const pluginConfig = getPluginFrontendConfig();
+    // pluginConfig.tabsToAdd =
+    //     patternlab.config.plugins[pluginName].options.tabsToAdd;
+    // writeConfigToOutput(patternlab, pluginConfig);
 
-//     //write the plugin json to public/patternlab-components
-//     const pluginConfig = getPluginFrontendConfig();
-//     pluginConfig.tabsToAdd =
-//         patternlab.config.plugins[pluginName].options.tabsToAdd;
-//     writeConfigToOutput(patternlab, pluginConfig);
+    //add the plugin config to the patternlab-object
+    if (!patternlab.plugins) {
+        patternlab.plugins = [];
+    }
+    patternlab.plugins.push(pluginConfig);
 
-//     //add the plugin config to the patternlab-object
-//     if (!patternlab.plugins) {
-//         patternlab.plugins = [];
-//     }
-//     patternlab.plugins.push(pluginConfig);
+    generateExportZip();
 
-//     //write the plugin dist folder to public/pattern-lab
-//     const pluginFiles = glob.sync(__dirname + '/dist/**/*');
+    //setup listeners if not already active. we also enable and set the plugin as initialized
+    if (!patternlab.config.plugins) {
+        patternlab.config.plugins = {};
+    }
 
-//     if (pluginFiles && pluginFiles.length > 0) {
-//         const tab_frontend_snippet = fs.readFileSync(
-//         path.resolve(__dirname + '/src/snippet.js'),
-//         'utf8'
-//         );
+    //attempt to only register hooks once
+    if (
+        patternlab.config.plugins[pluginName] !== undefined &&
+        patternlab.config.plugins[pluginName].enabled &&
+        !patternlab.config.plugins[pluginName].initialized
+    ) {
+        //register hooks
+        registerHooks(patternlab);
 
-//         for (let i = 0; i < pluginFiles.length; i++) {
-//         try {
-//             const fileStat = fs.statSync(pluginFiles[i]);
-//             if (fileStat.isFile()) {
-//             const relativePath = path
-//                 .relative(__dirname, pluginFiles[i])
-//                 .replace('dist', ''); //dist is dropped
-//             const writePath = path.join(
-//                 patternlab.config.paths.public.root,
-//                 'patternlab-components',
-//                 'pattern-lab',
-//                 safePluginName,
-//                 relativePath
-//             );
+        //set the plugin initialized flag to true to indicate it is installed and ready
+        patternlab.config.plugins[pluginName].initialized = true;
+    }
+}
 
-//             //a message to future plugin authors:
-//             //depending on your plugin's job - you might need to alter the dist file instead of copying.
-//             //if you are simply copying dist files, you can probably do the below:
-//             //fs.copySync(pluginFiles[i], writePath);
+module.exports = pluginInit;
 
-//             //in this case, we need to alter the dist file to loop through our tabs to load as defined in the package.json
-//             //we are also being a bit lazy here, since we only expect one file
-//             let tabJSFileContents = fs.readFileSync(pluginFiles[i], 'utf8');
-//             let snippetString = '';
-//             if (pluginConfig.tabsToAdd && pluginConfig.tabsToAdd.length > 0) {
-//                 for (let j = 0; j < pluginConfig.tabsToAdd.length; j++) {
-//                 const tabSnippetLocal = tab_frontend_snippet
-//                     .replace(/<<type>>/g, pluginConfig.tabsToAdd[j])
-//                     .replace(
-//                     /<<typeUC>>/g,
-//                     pluginConfig.tabsToAdd[j].toUpperCase()
-//                     );
-//                 snippetString += tabSnippetLocal + EOL;
-//                 }
-//                 tabJSFileContents = tabJSFileContents.replace(
-//                 '/*SNIPPETS*/',
-//                 snippetString
-//                 );
-//                 _.each(patternlab.uikits, uikit => {
-//                 fs.outputFileSync(
-//                     path.join(process.cwd(), uikit.outputDir, writePath),
-//                     tabJSFileContents
-//                 );
-//                 });
-//             }
-//             }
-//         } catch (ex) {
-//             console.trace(
-//             'plugin-tab: Error occurred while copying pluginFile',
-//             pluginFiles[i]
-//             );
-//             console.log(ex);
-//         }
-//         }
-//     }
+const { cpSync, createWriteStream, rmdirSync, readFileSync, writeFileSync } = require('fs');
+const archiver = require('archiver');
 
-//     //setup listeners if not already active. we also enable and set the plugin as initialized
-//     if (!patternlab.config.plugins) {
-//         patternlab.config.plugins = {};
-//     }
+function generateExportZip() {
+    console.log('Basker Export: START');
 
-//     //attempt to only register hooks once
-//     if (
-//         patternlab.config.plugins[pluginName] !== undefined &&
-//         patternlab.config.plugins[pluginName].enabled &&
-//         !patternlab.config.plugins[pluginName].initialized
-//     ) {
-//         //register hooks
-//         registerHooks(patternlab);
+    /**
+     * Create `export` directory with following structure
+     * (see https://basker.dev/themes/architecture/overview#directory-structure-and-component-types)
+     * export/
+     *  - assets/
+     *  - config/
+     *  - layouts/
+     *  - locales/
+     *  - comonents/
+     *  - snippets/
+     *  - templates/
+     */
 
-//         //set the plugin initialized flag to true to indicate it is installed and ready
-//         patternlab.config.plugins[pluginName].initialized = true;
-//     }
-// }
+    // Remove any existing export files
+    try {
+        rmdirSync('export', {recursive: true, force: true});
+    } catch (e) {}
 
-// module.exports = pluginInit;
+    // Creates `export` directory and copies files from `theme` into it
+    cpSync('theme', 'export', {recursive: true});
+
+    // Copies
+    cpSync('source/_data/settings_schema.json', 'export/config/settings_schema.json', {recursive: true});
+
+    // Copy Assets (possibly need to delete top level directories)
+    cpSync('public/assets', 'export/assets', {recursive: true});
+
+
+
+    // Generate the ZIP Export from the `export` directory
+    const output = createWriteStream('public/basker-export.zip');
+    const archive = archiver('zip', {
+        zlib: 9,
+    });
+
+    // listen for all archive data to be written
+    // 'close' event is fired only when a file descriptor is involved
+    output.on('close', function() {
+        console.log(archive.pointer() + ' total bytes');
+        console.log('archiver has been finalized and the output file descriptor has closed.');
+    });
+
+    // This event is fired when the data source is drained no matter what was the data source.
+    // It is not part of this library but rather from the NodeJS Stream API.
+    // @see: https://nodejs.org/api/stream.html#stream_event_end
+    output.on('end', function() {
+        console.log('Data has been drained');
+    });
+
+    // good practice to catch warnings (ie stat failures and other non-blocking errors)
+    archive.on('warning', function(err) {
+        if (err.code === 'ENOENT') {
+          // log warning
+        } else {
+          // throw error
+          throw err;
+        }
+    });
+
+    // good practice to catch this error explicitly
+    archive.on('error', function(err) {
+        throw err;
+    });
+
+    // pipe archive data to the file
+    archive.pipe(output);
+
+    // append files from a sub-directory, putting its contents at the root of archive
+    archive.directory('export/', false);
+
+    // finalize the archive (ie we are done appending files but streams have to finish yet)
+    // 'close', 'end' or 'finish' may be fired right after calling this method so register to them beforehand
+    archive.finalize();
+
+    console.log('Basker Export: END');
+}
