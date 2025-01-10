@@ -1,25 +1,25 @@
 'use strict';
 
-const {events} = require('@pattern-lab/core');
+const { cpSync, createWriteStream, rmdirSync, readFileSync, writeFileSync } = require('fs');
+const archiver = require('archiver');
 
-// const tab_loader = require('./src/tab-loader');
-
-// const pluginName = '../../../../../../../../writers-theatre/node_modules/@madehq/pl-basker-export/src/index.js';
 const pluginName = '@madehq/pl-basker-export';
-//remove the forward-slash, which can accidentally result in directories being written in the output
 const safePluginName = '@madehq-pl-basker-export';
 
-function addDownloadLink(patternLab) {
-  console.log('BASKER EXPORT: addDownloadLink', patternLab);
+function addDownloadLink() {
+  console.log('BASKER EXPORT: addDownloadLink');
+  // Was hoping to do this via the `patternlab-pattern-write-end` hook but doesn't seem to work
 
-  // Inject the Link
-  const plViewerFile = 'public/styleguide/js/patternlab-viewer.js';
-  let plViewerContent = readFileSync(plViewerFile, 'utf8');
-  if (plViewerContent.indexOf('Basker Export')) {
-    console.log('BASKER EXPORT: Adds link');
-    plViewerContent = plViewerContent.replace(/<li class="pl-c-tools__item">/, '<li class="pl-c-tools__item"><a href="/basker-export.zip">Basker Export</a></li><li class="pl-c-tools__item">');
-    writeFileSync(plViewerFile, plViewerContent, 'utf8');
-  }
+  setTimeout(() => {
+    // Inject the Link into the PL markup (REALLY HACKY I KNOW)
+    const plViewerFile = 'public/styleguide/js/patternlab-viewer.modern.js';
+    let plViewerContent = readFileSync(plViewerFile, 'utf8');
+    if (plViewerContent.indexOf('Basker Export')) {
+      console.log('BASKER EXPORT: Adds link');
+      plViewerContent = plViewerContent.replace(/<li class="pl-c-tools__item">/, '<li class="pl-c-tools__item"><a class="pl-c-button pl-c-button--medium" href="/basker-export.zip">Basker Export</a></li><li class="pl-c-tools__item">');
+      writeFileSync(plViewerFile, plViewerContent, 'utf8');
+    }
+  }, 2000);
 }
 
 /**
@@ -29,16 +29,10 @@ function addDownloadLink(patternLab) {
  * @param patternlab - global data store which has the handle to hooks
  */
 function registerHooks(patternlab) {
-    console.log('BASKER EXPORT: registerHooks', events, patternlab.hooks);
-    // PATTERNLAB_PATTERN_WRITE_END Write ZIP
-    patternlab.hooks['patternlab-pattern-write-end'] = patternlab.hooks['patternlab-pattern-write-end'] ?? [];
-    patternlab.hooks['patternlab-pattern-write-end'].push(generateExportZip);
-    // PATTERNLAB_BUILD_END Write Link
-    // patternlab.hooks[events.PATTERNLAB_BUILD_END].push(addDownloadLink);
-    patternlab.hooks['patternlab-build-end'] = patternlab.hooks['patternlab-build-end'] ?? [];
-    patternlab.hooks['patternlab-build-end'].push(addDownloadLink);
-    patternlab.hooks['patternlab-pattern-write-begin'] = patternlab.hooks['patternlab-pattern-write-begin'] ?? [];
-    patternlab.hooks['patternlab-pattern-write-begin'].push(addDownloadLink);
+  console.log('BASKER EXPORT: registerHooks', 'Regenerating ZIP causes a LOT of looping');
+  // PATTERNLAB_PATTERN_WRITE_END Write ZIP
+  // patternlab.hooks['patternlab-pattern-write-end'] = patternlab.hooks['patternlab-pattern-write-end'] ?? [];
+  // patternlab.hooks['patternlab-pattern-write-end'].push(generateExportZip);
 }
 
 /**
@@ -70,12 +64,9 @@ function pluginInit(patternlab) {
         console.error('patternlab object not provided to pluginInit');
         process.exit(1);
     }
-
+    addDownloadLink(patternlab);
     //write the plugin json to public/patternlab-components
     const pluginConfig = getPluginFrontendConfig();
-    // pluginConfig.tabsToAdd =
-    //     patternlab.config.plugins[pluginName].options.tabsToAdd;
-    // writeConfigToOutput(patternlab, pluginConfig);
 
     //add the plugin config to the patternlab-object
     if (!patternlab.plugins) {
@@ -83,7 +74,7 @@ function pluginInit(patternlab) {
     }
     patternlab.plugins.push(pluginConfig);
 
-    generateExportZip();
+    generateExportZip(patternlab);
 
     //setup listeners if not already active. we also enable and set the plugin as initialized
     if (!patternlab.config.plugins) {
@@ -106,10 +97,7 @@ function pluginInit(patternlab) {
 
 module.exports = pluginInit;
 
-const { cpSync, createWriteStream, rmdirSync, readFileSync, writeFileSync } = require('fs');
-const archiver = require('archiver');
-
-function generateExportZip() {
+function generateExportZip(patternlab) {
     console.log('Basker Export: START');
 
     /**
