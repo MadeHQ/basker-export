@@ -1,6 +1,6 @@
 'use strict';
 
-const { cpSync, createWriteStream, rmdirSync, readFileSync, writeFileSync } = require('fs');
+const { cpSync, createWriteStream, rmSync, readFileSync, writeFileSync } = require('fs');
 const archiver = require('archiver');
 
 const pluginName = '@madehq/pl-basker-export';
@@ -80,7 +80,7 @@ function generateExportZip() {
 
   // Remove any existing export files
   try {
-      rmdirSync('export', { recursive: true, force: true });
+      rmSync('export', { recursive: true, force: true });
   } catch (e) {}
 
   // Creates `export` directory and copies files from `theme` into it
