@@ -1,6 +1,7 @@
 'use strict';
 
 const { cpSync, createWriteStream, rmSync, readFileSync, writeFileSync } = require('fs');
+const { execSync } = require('child_process');
 const archiver = require('archiver');
 
 const pluginName = '@madehq/pl-basker-export';
@@ -91,7 +92,7 @@ const generateExportZip = debounce(function () {
   }
 
   // Generate the ZIP Export from the `export` directory
-  const output = createWriteStream(`public/${name}.zip`);
+  const output = createWriteStream(`public/${name}_${getBranchName()}.zip`);
 
   const archive = archiver('zip', {
       zlib: 9,
@@ -129,3 +130,11 @@ const generateExportZip = debounce(function () {
   // 'close', 'end' or 'finish' may be fired right after calling this method so register to them beforehand
   archive.finalize();
 }, 2500);
+
+function getBranchName() {
+  try {
+    return execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf8' }).trim().replace(/^.*\//, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  } catch (e) {
+    return 'unknown';
+  }
+}
