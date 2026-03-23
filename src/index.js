@@ -31,22 +31,11 @@ module.exports = function (patternlab) {
     return;
   }
 
-  const delay = parseInt(patternlab.config.plugins[pluginName].debounce, 10) || 1500;
-
-  let writingDownloadLink = false;
+  const delay = parseInt(patternlab.config.plugins[pluginName].debounce, 10) || 2500;
 
   patternlab.events.on('patternlab-pattern-write-end', debounce(() => {
-    if (writingDownloadLink) {
-      return;
-    }
-
     addDownloadLink();
-
-    writingDownloadLink = true;
-
     generateExportZip();
-
-    writingDownloadLink = false;
   }, delay));
 
   patternlab.config.plugins[pluginName].initialized = true;
@@ -64,7 +53,7 @@ async function addDownloadLink() {
   }
 }
 
-function generateExportZip() {
+const generateExportZip = debounce(function () {
   /**
    * Create `export` directory with following structure
    * (see https://basker.dev/themes/architecture/overview#directory-structure-and-component-types)
@@ -92,8 +81,17 @@ function generateExportZip() {
   // Copy Assets (possibly need to delete top level directories)
   cpSync('public/assets', 'export/assets', { recursive: true });
 
+  let name = 'basker-export.zip';
+
+  try {
+    const settings = JSON.parse(readFileSync('source/_data/settings_schema.json', 'utf8'));
+    name = settings[0].theme_name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  } catch (e) {
+    console.warn('Could not determine theme name from "settings_schema.json" - have you defined it? Using "basker-export.zip" instead');
+  }
+
   // Generate the ZIP Export from the `export` directory
-  const output = createWriteStream('public/basker-export.zip');
+  const output = createWriteStream(`public/${name}.zip`);
 
   const archive = archiver('zip', {
       zlib: 9,
@@ -130,5 +128,4 @@ function generateExportZip() {
   // finalize the archive (ie we are done appending files but streams have to finish yet)
   // 'close', 'end' or 'finish' may be fired right after calling this method so register to them beforehand
   archive.finalize();
-}
-
+}, 2500);
