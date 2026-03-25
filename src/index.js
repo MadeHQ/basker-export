@@ -146,7 +146,7 @@ module.exports = function (patternlab) {
     return;
   }
 
-  const delay = parseInt(patternlab.config.plugins[pluginName].debounce, 10) || 2500;
+  const delay = parseInt(patternlab.config.plugins[pluginName].debounce, 10) || 1500;
 
   patternlab.events.on('patternlab-build-end', debounce(() => {
     try {
