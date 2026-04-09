@@ -19,6 +19,7 @@ const generateExportZip = function () {
    * Create `export` directory with following structure
    * (see https://basker.dev/themes/architecture/overview#directory-structure-and-component-types)
    * export/
+   *  - .well-known (optional)
    *  - assets/
    *  - config/
    *  - layouts/
@@ -30,7 +31,7 @@ const generateExportZip = function () {
 
   // Remove any existing export files
   try {
-      rmSync('export', { recursive: true, force: true });
+    rmSync('export', { recursive: true, force: true });
   } catch (e) {}
 
   // Creates `export` directory and copies files from `theme` into it
@@ -38,6 +39,12 @@ const generateExportZip = function () {
 
   // Copies
   cpSync('source/_data/settings_schema.json', 'export/config/settings_schema.json', { recursive: true });
+
+  try {
+    cpSync('source/.well-known', 'export/.well-known', { recursive: true });
+  } catch (e) {
+    // Do nothing, it's optional
+  }
 
   // Copy Assets (possibly need to delete top level directories)
   cpSync('public/assets', 'export/assets', { recursive: true });
@@ -57,28 +64,28 @@ const generateExportZip = function () {
   const output = createWriteStream(`public/${filename}`);
 
   const archive = archiver('zip', {
-      zlib: 9,
+    zlib: 9,
   });
 
   // listen for all archive data to be written
   // 'close' event is fired only when a file descriptor is involved
   output.on('close', function() {
-      console.log(archive.pointer() + ' total bytes for export');
+    console.log(archive.pointer() + ' total bytes for export');
   });
 
   // good practice to catch warnings (ie stat failures and other non-blocking errors)
   archive.on('warning', function(err) {
-      if (err.code === 'ENOENT') {
-        // log warning
-      } else {
-        // throw error
-        throw err;
-      }
+    if (err.code === 'ENOENT') {
+      // log warning
+    } else {
+      // throw error
+      throw err;
+    }
   });
 
   // good practice to catch this error explicitly
   archive.on('error', function(err) {
-      throw err;
+    throw err;
   });
 
   // pipe archive data to the file
