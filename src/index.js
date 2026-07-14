@@ -39,6 +39,7 @@ const generateExportZip = function () {
 
   // Copies
   cpSync('source/_data/settings_schema.json', 'export/config/settings_schema.json', { recursive: true });
+  cpSync('source/locales', 'export/locales', { recursive: true });
 
   try {
     cpSync('source/.well-known', 'export/.well-known', { recursive: true });
