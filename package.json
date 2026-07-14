@@ -1,6 +1,6 @@
 {
   "name": "@madehq/pl-basker-export",
-  "version": "1.0.0",
+  "version": "1.0.1-0",
   "description": "Handles Export in basker format",
   "main": "src/index.js",
   "scripts": {
